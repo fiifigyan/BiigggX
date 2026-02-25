@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Users/Fiifi/Desktop/BiigggX/backend && npm install 2>&1)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)"
+    ]
+  }
+}

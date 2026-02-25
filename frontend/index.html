@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Biiggg X — Biiggg moves. X marks the moment. Bold streetwear brand with urban culture aesthetics." />
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Biiggg X" />
+    <meta property="og:description" content="Biiggg moves. X marks the moment." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.jpg" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700;800;900&family=Oswald:wght@400;500;600;700&family=Permanent+Marker&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Biiggg X — X Marks The Moment</title>
+
+    <style>
+      /* Critical inline styles to prevent FOUC */
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { background-color: #000000; color: #ffffff; }
+      body { overflow-x: hidden; }
+      #root { min-height: 100vh; }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: #0A0A0A; }
+      ::-webkit-scrollbar-thumb { background: #E53935; border-radius: 2px; }
+      ::-webkit-scrollbar-thumb:hover { background: #00BFFF; }
+
+      /* Selection color */
+      ::selection { background: #E53935; color: #fff; }
+      ::-moz-selection { background: #E53935; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

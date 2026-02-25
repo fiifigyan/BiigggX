@@ -32,6 +32,7 @@ export default defineSchema({
     tags: v.optional(v.array(v.string())),
     isActive: v.boolean(),
     isFeatured: v.optional(v.boolean()),
+    isExclusive: v.optional(v.boolean()),
     stripePriceId: v.optional(v.string()),
     stripeProductId: v.optional(v.string()),
     createdAt: v.number(),
@@ -84,6 +85,7 @@ export default defineSchema({
         paymentMethodType: v.optional(v.string()),
       })
     ),
+    stripeSessionId: v.optional(v.string()),
     trackingNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
     createdAt: v.number(),
@@ -91,7 +93,8 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_status', ['status'])
-    .index('by_created', ['createdAt']),
+    .index('by_created', ['createdAt'])
+    .index('by_session', ['stripeSessionId']),
 
   // ── Media ──────────────────────────────────────────────────────────────────
   media: defineTable({

@@ -1,11 +1,14 @@
-import React, { useEffect, useRef } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import React, { useEffect, useRef, useState } from 'react';
+import { useAction, useMutation } from 'convex/react';
+// eslint-disable-next-line import/no-unresolved
+import { api } from '@convex/api';
 import useCartStore from '../store/cartStore';
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
 
 export default function Cart() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, clearCart } = useCartStore();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const createCheckoutSession = useAction(api.functions.stripe.createCheckoutSession);
+  const placeOrder = useMutation(api.functions.orders.placeOrder);
   const drawerRef = useRef(null);
 
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -25,19 +28,49 @@ export default function Cart() {
   }, [isOpen]);
 
   const handleCheckout = async () => {
+    if (items.length === 0 || isCheckingOut) return;
+    setIsCheckingOut(true);
     try {
-      const stripe = await stripePromise;
-      if (!stripe) {
-        alert('Stripe is not configured. Add your VITE_STRIPE_PUBLISHABLE_KEY to .env');
-        return;
+      const origin = window.location.origin;
+
+      // 1. Create Stripe checkout session
+      const { sessionId, url } = await createCheckoutSession({
+        items: items.map((item) => ({
+          merchId: item._id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          imageURL: item.imageURL,
+        })),
+        successUrl: `${origin}/?success=true`,
+        cancelUrl: `${origin}/shop?canceled=true`,
+      });
+
+      // 2. Persist pending order linked to this session
+      await placeOrder({
+        items: items.map((item) => ({
+          merchId: item._id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.selectedSize !== 'One Size' ? item.selectedSize : undefined,
+          imageURL: item.imageURL,
+        })),
+        totalAmount: totalPrice,
+        stripeSessionId: sessionId,
+        paymentProvider: 'stripe',
+      });
+
+      // 3. Redirect to Stripe-hosted checkout page
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL returned.');
       }
-      // In production, call your Convex/server function to create a checkout session
-      // const response = await fetch('/api/create-checkout-session', { ... });
-      // const { sessionId } = await response.json();
-      // await stripe.redirectToCheckout({ sessionId });
-      alert('Checkout flow: Connect your Convex backend to complete Stripe integration.');
     } catch (err) {
       console.error('Checkout error:', err);
+      alert(err instanceof Error ? err.message : 'Checkout failed. Please try again.');
+      setIsCheckingOut(false);
     }
   };
 
@@ -178,12 +211,25 @@ export default function Cart() {
             {/* Checkout button */}
             <button
               onClick={handleCheckout}
-              className="w-full btn-crimson justify-center"
+              disabled={isCheckingOut}
+              className={`w-full btn-crimson justify-center ${isCheckingOut ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              Secure Checkout
+              {isCheckingOut ? (
+                <>
+                  <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Redirecting...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Secure Checkout
+                </>
+              )}
             </button>
 
             {/* Clear cart */}

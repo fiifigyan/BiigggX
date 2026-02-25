@@ -1,5 +1,6 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
+import { api } from '../_generated/api';
 
 /**
  * Create a Stripe Checkout Session.
@@ -20,22 +21,33 @@ export const createCheckoutSession = action({
     cancelUrl: v.string(),
     customerEmail: v.optional(v.string()),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const Stripe = (await import('stripe') as any).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2024-11-20.acacia',
     });
 
+    // Apply 10% discount for active BiigggX Pass members
+    const identity = await ctx.auth.getUserIdentity();
+    let discountMultiplier = 1;
+    if (identity) {
+      const subs = await ctx.runQuery(api.stripe.getUserSubscriptions, {});
+      const isSubscriber = (subs as { status: string }[]).some(
+        (s) => s.status === 'active' || s.status === 'trialing'
+      );
+      if (isSubscriber) discountMultiplier = 0.9;
+    }
+
     const lineItems = args.items.map((item) => ({
       price_data: {
         currency: 'usd',
         product_data: {
-          name: item.name,
+          name: discountMultiplier < 1 ? `${item.name} — Member 10% Off` : item.name,
           images: item.imageURL ? [item.imageURL] : [],
           metadata: { convex_merch_id: item.merchId },
         },
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: Math.round(item.price * 100 * discountMultiplier),
       },
       quantity: item.quantity,
     }));

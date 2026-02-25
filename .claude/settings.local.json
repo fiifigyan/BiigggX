@@ -4,7 +4,11 @@
       "Bash(cd /c/Users/Fiifi/Desktop/BiigggX/backend && npm install 2>&1)",
       "Bash(tail:*)",
       "Bash(grep:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(cd C:/Users/Fiifi/Desktop/BiigggX/frontend && npm install @clerk/clerk-react 2>&1)",
+      "Bash(ls:*)",
+      "Bash(node:*)",
+      "Bash(cd C:/Users/Fiifi/Desktop/BiigggX/backend && npx convex dev --once 2>&1)"
     ]
   }
 }

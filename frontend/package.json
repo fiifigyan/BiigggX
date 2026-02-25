@@ -10,16 +10,17 @@
     "lint": "eslint src --ext js,jsx"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.1",
+    "@stripe/react-stripe-js": "^2.5.0",
+    "@stripe/stripe-js": "^3.0.0",
+    "axios": "^1.6.7",
+    "convex": "^1.9.0",
+    "gsap": "^3.12.5",
+    "lottie-react": "^2.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.0",
-    "gsap": "^3.12.5",
-    "@stripe/stripe-js": "^3.0.0",
-    "@stripe/react-stripe-js": "^2.5.0",
-    "convex": "^1.9.0",
-    "lottie-react": "^2.4.0",
-    "zustand": "^4.5.2",
-    "axios": "^1.6.7"
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

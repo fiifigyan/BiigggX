@@ -82,6 +82,7 @@ export const createMerch = mutation({
     sizes: v.optional(v.array(v.string())),
     tags: v.optional(v.array(v.string())),
     isFeatured: v.optional(v.boolean()),
+    isExclusive: v.optional(v.boolean()),
     stripePriceId: v.optional(v.string()),
     stripeProductId: v.optional(v.string()),
   },
@@ -121,14 +122,17 @@ export const seedMerch = mutation({
   handler: async (ctx) => {
     const now = Date.now();
     const items = [
-      { name: 'X-Blaze Hoodie',       category: 'hoodie'  as const, price: 89,  inventory: 23, isFeatured: true,  tags: ['hoodie', 'crimson', 'signature'] },
-      { name: 'Midnight Arch Hoodie', category: 'hoodie'  as const, price: 95,  inventory: 14, isFeatured: false, tags: ['hoodie', 'dark'] },
-      { name: 'Midnight Snap Cap',    category: 'cap'     as const, price: 42,  inventory: 7,  isFeatured: true,  tags: ['cap', 'snap'] },
-      { name: 'Neon X Cap',           category: 'cap'     as const, price: 38,  inventory: 31, isFeatured: false, tags: ['cap', 'neon'] },
-      { name: 'Graffiti Sticker Pack',category: 'sticker' as const, price: 14,  inventory: 100,isFeatured: true,  tags: ['sticker', 'pack'] },
-      { name: 'Neon Pulse Hoodie',    category: 'limited' as const, price: 120, inventory: 5,  isFeatured: true,  tags: ['limited', 'hoodie', 'neon'] },
-      { name: 'Blood X Drop Tee',     category: 'limited' as const, price: 65,  inventory: 10, isFeatured: false, tags: ['limited', 'tee'] },
-      { name: 'Chromatic X Jacket',   category: 'limited' as const, price: 180, inventory: 3,  isFeatured: true,  tags: ['limited', 'jacket'] },
+      { name: 'X-Blaze Hoodie',         category: 'hoodie'  as const, price: 89,  inventory: 23, isFeatured: true,  isExclusive: false, tags: ['hoodie', 'crimson', 'signature'] },
+      { name: 'Midnight Arch Hoodie',   category: 'hoodie'  as const, price: 95,  inventory: 14, isFeatured: false, isExclusive: false, tags: ['hoodie', 'dark'] },
+      { name: 'Midnight Snap Cap',      category: 'cap'     as const, price: 42,  inventory: 7,  isFeatured: true,  isExclusive: false, tags: ['cap', 'snap'] },
+      { name: 'Neon X Cap',             category: 'cap'     as const, price: 38,  inventory: 31, isFeatured: false, isExclusive: false, tags: ['cap', 'neon'] },
+      { name: 'Graffiti Sticker Pack',  category: 'sticker' as const, price: 14,  inventory: 100,isFeatured: true,  isExclusive: false, tags: ['sticker', 'pack'] },
+      { name: 'Neon Pulse Hoodie',      category: 'limited' as const, price: 120, inventory: 5,  isFeatured: true,  isExclusive: false, tags: ['limited', 'hoodie', 'neon'] },
+      { name: 'Blood X Drop Tee',       category: 'limited' as const, price: 65,  inventory: 10, isFeatured: false, isExclusive: false, tags: ['limited', 'tee'] },
+      { name: 'Chromatic X Jacket',     category: 'limited' as const, price: 180, inventory: 3,  isFeatured: true,  isExclusive: false, tags: ['limited', 'jacket'] },
+      // Members-only exclusive drops
+      { name: 'Pass Holder Shadow Tee', category: 'limited' as const, price: 75,  inventory: 20, isFeatured: true,  isExclusive: true,  tags: ['exclusive', 'members', 'tee'] },
+      { name: 'X Members Cap',          category: 'cap'     as const, price: 55,  inventory: 15, isFeatured: false, isExclusive: true,  tags: ['exclusive', 'members', 'cap'] },
     ];
 
     const ids = [];

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
 
 const CATEGORIES = {
@@ -66,7 +67,17 @@ function SplatterEffect({ active, color }) {
   );
 }
 
-export default function ProductCard({ product }) {
+// Lock icon for exclusive items
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+export default function ProductCard({ product, isSubscribed = false }) {
   const [hovered, setHovered] = useState(false);
   const [addedSplatter, setAddedSplatter] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -77,6 +88,8 @@ export default function ProductCard({ product }) {
   const category = CATEGORIES[product.category] || CATEGORIES.hoodie;
   const hasInventory = product.inventory > 0;
   const isLimited = product.category === 'limited';
+  const isExclusive = product.isExclusive === true;
+  const isLocked = isExclusive && !isSubscribed;
 
   // Tilt effect on hover
   const handleMouseMove = (e) => {
@@ -95,7 +108,7 @@ export default function ProductCard({ product }) {
   };
 
   const handleAddToCart = () => {
-    if (!hasInventory) return;
+    if (!hasInventory || isLocked) return;
     const needsSize = ['hoodie'].includes(product.category);
     if (needsSize && !selectedSize) {
       setShowSizes(true);
@@ -122,11 +135,11 @@ export default function ProductCard({ product }) {
 
       {/* Image container */}
       <div className="relative overflow-hidden aspect-square bg-surface-3">
-        {/* Placeholder image with graffiti-style gradient */}
         <div
           className="w-full h-full flex items-center justify-center transition-transform duration-700 group-hover:scale-110"
           style={{
-            background: `linear-gradient(135deg, #0A0A0A, #1A1A1A, ${category.color}15)`,
+            background: `linear-gradient(135deg, #0A0A0A, #1A1A1A, ${isExclusive ? '#00BFFF' : category.color}15)`,
+            filter: isLocked ? 'brightness(0.45)' : 'none',
           }}
         >
           {product.imageURL ? (
@@ -140,50 +153,80 @@ export default function ProductCard({ product }) {
               <svg className="w-20 h-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
-              <span className="font-bebas text-2xl tracking-widest" style={{ color: category.color }}>
+              <span className="font-bebas text-2xl tracking-widest" style={{ color: isExclusive ? '#00BFFF' : category.color }}>
                 {product.name}
               </span>
             </div>
           )}
         </div>
 
-        {/* Graffiti texture overlay on hover */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(ellipse at 20% 30%, ${category.color}40 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 70%, #00BFFF30 0%, transparent 60%)
-            `,
-          }}
-        />
+        {/* Hover overlay */}
+        {!isLocked && (
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at 20% 30%, ${category.color}40 0%, transparent 60%), radial-gradient(ellipse at 80% 70%, #00BFFF30 0%, transparent 60%)`,
+            }}
+          />
+        )}
 
         {/* Category badge */}
         <div className="absolute top-3 left-3">
-          <span
-            className="font-marker text-xs px-2 py-0.5 rotate-[-2deg] inline-block"
-            style={{
-              background: `${category.color}20`,
-              border: `1px solid ${category.color}60`,
-              color: category.color,
-            }}
-          >
-            {category.label}
-          </span>
+          {isExclusive ? (
+            <span
+              className="font-montserrat text-[10px] font-extrabold uppercase tracking-widest px-2 py-1 inline-block"
+              style={{
+                clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))',
+                background: 'rgba(0,191,255,0.15)',
+                border: '1px solid rgba(0,191,255,0.5)',
+                color: '#00BFFF',
+              }}
+            >
+              {isSubscribed ? 'Exclusive' : 'Members Only'}
+            </span>
+          ) : (
+            <span
+              className="font-marker text-xs px-2 py-0.5 rotate-[-2deg] inline-block"
+              style={{
+                background: `${category.color}20`,
+                border: `1px solid ${category.color}60`,
+                color: category.color,
+              }}
+            >
+              {category.label}
+            </span>
+          )}
         </div>
 
         {/* Limited badge */}
-        {isLimited && (
+        {isLimited && !isExclusive && (
           <div className="absolute top-3 right-3">
-            <span className="font-montserrat text-[10px] font-extrabold uppercase tracking-widest px-2 py-1 bg-crimson text-white"
-              style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+            <span
+              className="font-montserrat text-[10px] font-extrabold uppercase tracking-widest px-2 py-1 bg-crimson text-white"
+              style={{ clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}
+            >
               Limited
             </span>
           </div>
         )}
 
+        {/* Lock overlay for exclusive items */}
+        {isLocked && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+            <div style={{ color: '#00BFFF', filter: 'drop-shadow(0 0 8px #00BFFF)' }}>
+              <LockIcon />
+            </div>
+            <span
+              className="font-montserrat text-[10px] font-bold uppercase tracking-widest"
+              style={{ color: '#00BFFF' }}
+            >
+              Pass Holders Only
+            </span>
+          </div>
+        )}
+
         {/* Out of stock overlay */}
-        {!hasInventory && (
+        {!hasInventory && !isLocked && (
           <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
             <span className="font-bebas text-2xl text-urban/60 tracking-widest rotate-[-15deg] border border-urban/20 px-4 py-2">
               Sold Out
@@ -195,13 +238,20 @@ export default function ProductCard({ product }) {
       {/* Card body */}
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
-          <h3 className="font-montserrat font-bold text-base text-white leading-tight group-hover:text-crimson transition-colors duration-300">
+          <h3
+            className="font-montserrat font-bold text-base leading-tight transition-colors duration-300"
+            style={{ color: isLocked ? 'rgba(176,176,176,0.5)' : '#fff' }}
+          >
             {product.name}
           </h3>
           <div className="text-right shrink-0 ml-2">
             <span
               className="font-bebas text-xl"
-              style={{ color: category.color, textShadow: `0 0 10px ${category.color}60` }}
+              style={{
+                color: isExclusive ? '#00BFFF' : category.color,
+                textShadow: isLocked ? 'none' : `0 0 10px ${isExclusive ? '#00BFFF60' : category.color + '60'}`,
+                opacity: isLocked ? 0.4 : 1,
+              }}
             >
               ${product.price}
             </span>
@@ -209,23 +259,25 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Inventory indicator */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex-1 h-[2px] bg-surface-3 overflow-hidden">
-            <div
-              className="h-full transition-all duration-1000"
-              style={{
-                width: `${Math.min((product.inventory / 50) * 100, 100)}%`,
-                background: product.inventory < 10 ? '#E53935' : product.inventory < 25 ? '#FF9800' : '#4CAF50',
-              }}
-            />
+        {!isLocked && (
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex-1 h-[2px] bg-surface-3 overflow-hidden">
+              <div
+                className="h-full transition-all duration-1000"
+                style={{
+                  width: `${Math.min((product.inventory / 50) * 100, 100)}%`,
+                  background: product.inventory < 10 ? '#E53935' : product.inventory < 25 ? '#FF9800' : '#4CAF50',
+                }}
+              />
+            </div>
+            <span className="font-montserrat text-[10px] text-urban/50 shrink-0">
+              {product.inventory > 0 ? `${product.inventory} left` : 'Sold Out'}
+            </span>
           </div>
-          <span className="font-montserrat text-[10px] text-urban/50 shrink-0">
-            {product.inventory > 0 ? `${product.inventory} left` : 'Sold Out'}
-          </span>
-        </div>
+        )}
 
         {/* Size selector */}
-        {showSizes && (
+        {showSizes && !isLocked && (
           <div className="mb-3">
             <div className="flex flex-wrap gap-1">
               {SIZES.map((size) => (
@@ -245,34 +297,53 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        {/* Add to Cart */}
-        <button
-          onClick={handleAddToCart}
-          disabled={!hasInventory}
-          className={`w-full font-montserrat font-bold text-xs uppercase tracking-widest py-2.5 transition-all duration-300 relative overflow-hidden group/btn ${
-            hasInventory
-              ? 'text-white hover:text-black'
-              : 'opacity-40 cursor-not-allowed text-urban border border-urban/20'
-          }`}
-          style={{
-            background: hasInventory ? category.color : 'transparent',
-            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
-            boxShadow: hasInventory && hovered ? `0 0 20px ${category.color}60` : 'none',
-          }}
-        >
-          {hasInventory ? (
-            <>
-              <span className="relative z-10">
-                {addedSplatter ? '✓ Added!' : selectedSize ? `Add — Size ${selectedSize}` : 'Add to Cart'}
-              </span>
-              <div
-                className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200"
-              />
-            </>
-          ) : (
-            'Sold Out'
-          )}
-        </button>
+        {/* Add to Cart / Members Only / Sold Out button */}
+        {isLocked ? (
+          <Link
+            to="/membership"
+            className="w-full font-montserrat font-bold text-xs uppercase tracking-widest py-2.5 flex items-center justify-center gap-2 transition-all duration-300"
+            style={{
+              background: 'rgba(0,191,255,0.1)',
+              border: '1px solid rgba(0,191,255,0.35)',
+              color: '#00BFFF',
+              clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,191,255,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,191,255,0.1)'}
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Get the Pass to Unlock
+          </Link>
+        ) : (
+          <button
+            onClick={handleAddToCart}
+            disabled={!hasInventory}
+            className={`w-full font-montserrat font-bold text-xs uppercase tracking-widest py-2.5 transition-all duration-300 relative overflow-hidden group/btn ${
+              hasInventory
+                ? 'text-white hover:text-black'
+                : 'opacity-40 cursor-not-allowed text-urban border border-urban/20'
+            }`}
+            style={{
+              background: hasInventory ? (isExclusive ? '#00BFFF' : category.color) : 'transparent',
+              clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+              boxShadow: hasInventory && hovered ? `0 0 20px ${isExclusive ? '#00BFFF60' : category.color + '60'}` : 'none',
+            }}
+          >
+            {hasInventory ? (
+              <>
+                <span className="relative z-10">
+                  {addedSplatter ? '✓ Added!' : selectedSize ? `Add — Size ${selectedSize}` : 'Add to Cart'}
+                </span>
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200" />
+              </>
+            ) : (
+              'Sold Out'
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

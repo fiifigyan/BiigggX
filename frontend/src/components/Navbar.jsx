@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import useCartStore from '../store/cartStore';
 
 const NAV_LINKS = [
@@ -8,6 +9,7 @@ const NAV_LINKS = [
   { label: 'Shop', path: '/shop' },
   { label: 'Media', path: '/media' },
   { label: 'Contact', path: '/contact' },
+  { label: 'Pass', path: '/membership', highlight: true },
 ];
 
 export default function Navbar() {
@@ -71,6 +73,7 @@ export default function Navbar() {
                   key={link.path}
                   to={link.path}
                   className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}
+                  style={link.highlight ? { color: '#E53935' } : {}}
                 >
                   {link.label}
                 </Link>
@@ -100,6 +103,28 @@ export default function Navbar() {
                   </span>
                 )}
               </button>
+
+              {/* Auth */}
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="hidden md:block font-montserrat text-xs text-urban/60 hover:text-white transition-colors duration-200 uppercase tracking-widest">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: 'w-8 h-8 ring-1 ring-white/20 hover:ring-crimson transition-all duration-200',
+                      userButtonPopoverCard: 'bg-[#0A0A0A] border border-white/10 shadow-2xl',
+                      userButtonPopoverActionButton: 'text-urban hover:text-white hover:bg-white/5',
+                      userButtonPopoverActionButtonText: 'font-montserrat text-xs uppercase tracking-widest',
+                      userButtonPopoverFooter: 'hidden',
+                    },
+                  }}
+                />
+              </SignedIn>
 
               {/* Shop CTA */}
               <Link to="/shop" className="hidden md:block btn-crimson text-xs py-2 px-5">
@@ -145,12 +170,17 @@ export default function Navbar() {
               className={`font-bebas text-6xl tracking-wider transition-all duration-300 ${
                 location.pathname === link.path
                   ? 'text-crimson text-neon-glow'
-                  : 'text-white/80 hover:text-crimson'
+                  : link.highlight
+                    ? 'text-crimson hover:text-white'
+                    : 'text-white/80 hover:text-crimson'
               }`}
               style={{
                 transitionDelay: menuOpen ? `${i * 60}ms` : '0ms',
                 transform: menuOpen ? 'translateX(0)' : 'translateX(-30px)',
                 opacity: menuOpen ? 1 : 0,
+                textShadow: link.highlight && location.pathname !== link.path
+                  ? '0 0 20px rgba(229,57,53,0.4)'
+                  : undefined,
               }}
             >
               {link.label}
@@ -158,7 +188,7 @@ export default function Navbar() {
           ))}
 
           <div
-            className="mt-8"
+            className="mt-8 flex flex-col items-center gap-4"
             style={{
               transitionDelay: menuOpen ? '320ms' : '0ms',
               transform: menuOpen ? 'translateY(0)' : 'translateY(20px)',
@@ -169,6 +199,27 @@ export default function Navbar() {
             <Link to="/shop" className="btn-crimson">
               Shop the Drop
             </Link>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="font-montserrat text-xs text-urban/50 hover:text-white transition-colors uppercase tracking-widest">
+                  Sign In
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <div className="flex items-center gap-3">
+                <span className="font-montserrat text-xs text-urban/40 uppercase tracking-widest">Account</span>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: 'w-8 h-8 ring-1 ring-white/20',
+                      userButtonPopoverCard: 'bg-[#0A0A0A] border border-white/10',
+                      userButtonPopoverFooter: 'hidden',
+                    },
+                  }}
+                />
+              </div>
+            </SignedIn>
           </div>
 
           <p className="absolute bottom-8 font-montserrat text-xs text-urban/30 tracking-widest uppercase">

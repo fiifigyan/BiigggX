@@ -36,8 +36,9 @@ export const placeOrder = mutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const identity = await ctx.auth.getUserIdentity();
 
-    // Validate inventory for all items
+    // Validate inventory and exclusivity for all items
     for (const item of args.items) {
       const merch = await ctx.db.get(item.merchId);
       if (!merch) throw new Error(`Merch item not found: ${item.merchId}`);
@@ -45,9 +46,12 @@ export const placeOrder = mutation({
       if (merch.inventory < item.quantity) {
         throw new Error(`Insufficient inventory for ${merch.name}. Available: ${merch.inventory}`);
       }
+      if (merch.isExclusive && !identity) {
+        throw new Error(`${merch.name} is exclusive to BiigggX Pass members. Sign in to purchase.`);
+      }
     }
 
-    // Create order
+    // Create order (inventory is decremented only after payment is confirmed)
     const orderId = await ctx.db.insert('orders', {
       userId: args.userId,
       guestEmail: args.guestEmail,
@@ -56,6 +60,7 @@ export const placeOrder = mutation({
       totalAmount: args.totalAmount,
       currency: args.currency || 'USD',
       shippingAddress: args.shippingAddress,
+      stripeSessionId: args.stripeSessionId,
       paymentInfo: args.paymentProvider
         ? {
             provider: args.paymentProvider,
@@ -65,16 +70,6 @@ export const placeOrder = mutation({
       createdAt: now,
       updatedAt: now,
     });
-
-    // Decrement inventory
-    for (const item of args.items) {
-      const merch = await ctx.db.get(item.merchId);
-      if (merch) {
-        await ctx.db.patch(item.merchId, {
-          inventory: merch.inventory - item.quantity,
-        });
-      }
-    }
 
     return orderId;
   },
@@ -129,10 +124,10 @@ export const updateOrderBySession = mutation({
     paymentIntentId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const orders = await ctx.db.query('orders').collect();
-    const order = orders.find(
-      (o) => o.paymentInfo?.sessionId === args.sessionId
-    );
+    const order = await ctx.db
+      .query('orders')
+      .withIndex('by_session', (q) => q.eq('stripeSessionId', args.sessionId))
+      .first();
     if (!order) return { success: false, error: 'Order not found' };
 
     await ctx.db.patch(order._id, {
@@ -142,6 +137,18 @@ export const updateOrderBySession = mutation({
         ? { ...order.paymentInfo, paymentIntentId: args.paymentIntentId }
         : undefined,
     });
+
+    // Decrement inventory only after Stripe confirms payment
+    if (args.status === 'paid') {
+      for (const item of order.items) {
+        const merch = await ctx.db.get(item.merchId);
+        if (merch) {
+          await ctx.db.patch(item.merchId, {
+            inventory: Math.max(0, merch.inventory - item.quantity),
+          });
+        }
+      }
+    }
 
     return { success: true, orderId: order._id };
   },

@@ -4,6 +4,7 @@ import Hero from '../components/Hero';
 import ProductCard from '../components/ProductCard';
 import { useInView } from '../hooks/useInView';
 import { useFeaturedMerch } from '../hooks/useConvex';
+import { useSubscription } from '../hooks/useSubscription';
 
 function SectionTitle({ title, highlight, subtitle, inView, delay = 0 }) {
   return (
@@ -80,6 +81,8 @@ export default function Home() {
   const featuredProducts = useFeaturedMerch();
   const isLoading = featuredProducts === undefined;
 
+  const { isSubscribed } = useSubscription();
+
   return (
     <div className="bg-midnight">
       <Hero />
@@ -127,7 +130,7 @@ export default function Home() {
                       transition: `all 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${i * 120 + 200}ms`,
                     }}
                   >
-                    <ProductCard product={product} />
+                    <ProductCard product={product} isSubscribed={isSubscribed} />
                   </div>
                 ))
             }

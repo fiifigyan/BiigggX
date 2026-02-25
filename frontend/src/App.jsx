@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useConvexAuth, useMutation } from 'convex/react';
+// eslint-disable-next-line import/no-unresolved
+import { api } from '@convex/api';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Cart from './components/Cart';
@@ -8,6 +11,21 @@ import About from './pages/About';
 import Shop from './pages/Shop';
 import Media from './pages/Media';
 import Contact from './pages/Contact';
+import Membership from './pages/Membership';
+
+// Syncs the Clerk user into the Convex users table on first sign-in
+function UserSync() {
+  const { isAuthenticated } = useConvexAuth();
+  const createOrUpdateUser = useMutation(api.functions.users.createOrUpdateUser);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      createOrUpdateUser();
+    }
+  }, [isAuthenticated, createOrUpdateUser]);
+
+  return null;
+}
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -96,6 +114,7 @@ function AppContent() {
       {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
       <div className={`transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}>
         <Router>
+          <UserSync />
           <ScrollToTop />
           <Navbar />
           <main>
@@ -105,6 +124,7 @@ function AppContent() {
               <Route path="/shop" element={<Shop />} />
               <Route path="/media" element={<Media />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/membership" element={<Membership />} />
             </Routes>
           </main>
           <Footer />

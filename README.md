@@ -136,7 +136,7 @@ npm run dev
 ### Frontend → Vercel
 
 ```bash
-npm i -g vercel
+x
 cd frontend
 vercel --prod
 

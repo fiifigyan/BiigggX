@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const SOCIAL_LINKS = [
   {
     name: 'Instagram',
-    href: '#',
+    href: 'https://www.instagram.com/biigggX/',
     color: '#E53935',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -14,7 +14,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'TikTok',
-    href: '#',
+    href: 'www.tiktok.com/@biigggX',
     color: '#00BFFF',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -24,7 +24,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'X (Twitter)',
-    href: '#',
+    href: 'https://x.com/biigggX',
     color: '#B0B0B0',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">

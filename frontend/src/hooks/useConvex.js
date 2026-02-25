@@ -85,3 +85,10 @@ export function useTimeline() {
 export function useStripeCheckout() {
   return useAction(api.functions.stripe.createCheckoutSession);
 }
+
+/**
+ * Hook for getting the current authenticated user's Convex record
+ */
+export function useCurrentUser() {
+  return useQuery(api.functions.users.getCurrentUser, {});
+}

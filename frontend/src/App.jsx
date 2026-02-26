@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useSearchParams } from 'react-router-dom';
 import { useConvexAuth, useMutation } from 'convex/react';
 // eslint-disable-next-line import/no-unresolved
 import { api } from '@convex/api';
@@ -12,8 +12,89 @@ import Shop from './pages/Shop';
 import Media from './pages/Media';
 import Contact from './pages/Contact';
 import Membership from './pages/Membership';
+import Admin from './pages/Admin';
+import Orders from './pages/Orders';
 
-// Syncs the Clerk user into the Convex users table on first sign-in
+// ─── Error Boundary ──────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-midnight flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <div className="font-bebas text-8xl text-crimson mb-4" style={{ textShadow: '0 0 40px rgba(229,57,53,0.4)' }}>X</div>
+            <h1 className="font-bebas text-3xl text-white mb-2">Something broke</h1>
+            <p className="font-montserrat text-sm text-urban/50 mb-6">
+              {this.state.error?.message || 'An unexpected error occurred.'}
+            </p>
+            <button
+              onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = '/'; }}
+              className="btn-crimson"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ─── Order Success Banner ─────────────────────────────────────────────────────
+function OrderSuccessBanner() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setVisible(true);
+      // Remove the query param so it doesn't persist on refresh
+      setSearchParams((p) => { p.delete('success'); return p; }, { replace: true });
+    }
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-[9998] w-full max-w-sm px-4"
+      style={{ animation: 'fadeInUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards' }}
+    >
+      <div
+        className="flex items-center gap-3 px-5 py-4"
+        style={{
+          background: '#0A0A0A',
+          border: '1px solid rgba(0,191,255,0.4)',
+          boxShadow: '0 0 30px rgba(0,191,255,0.1)',
+          clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
+        }}
+      >
+        <svg className="w-5 h-5 flex-shrink-0 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        <div className="flex-1">
+          <p className="font-montserrat font-bold text-sm text-white">Order received!</p>
+          <p className="font-montserrat text-xs text-urban/50 mt-0.5">We'll confirm your order shortly.</p>
+        </div>
+        <button onClick={() => setVisible(false)} className="text-urban/40 hover:text-white transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Syncs the Clerk user into the Convex users table on first sign-in ────────
 function UserSync() {
   const { isAuthenticated } = useConvexAuth();
   const createOrUpdateUser = useMutation(api.functions.users.createOrUpdateUser);
@@ -116,6 +197,7 @@ function AppContent() {
         <Router>
           <UserSync />
           <ScrollToTop />
+          <OrderSuccessBanner />
           <Navbar />
           <main>
             <Routes>
@@ -125,6 +207,8 @@ function AppContent() {
               <Route path="/media" element={<Media />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/membership" element={<Membership />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/orders" element={<Orders />} />
             </Routes>
           </main>
           <Footer />
@@ -136,5 +220,9 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
 }

@@ -1,16 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAction } from 'convex/react';
 import { useClerk } from '@clerk/clerk-react';
+import { useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line import/no-unresolved
 import { api } from '@convex/api';
 import { useInView } from '../hooks/useInView';
 import { useSubscription } from '../hooks/useSubscription';
 
-// Replace these with your actual Stripe Price IDs from the Stripe Dashboard
-const PRICE_IDS = {
-  monthly: 'price_1T4jy1GMq28AnENLWKsL82l1',
-  annual:  'price_1T4jy1GMq28AnENLGUm8M5wq',
-};
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 
@@ -219,6 +215,15 @@ function FaqItem({ item, isOpen, onToggle }) {
 export default function Membership() {
   const [billing, setBilling] = useState('annual');
   const [openFaq, setOpenFaq] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setShowSuccess(true);
+      setSearchParams((p) => { p.delete('success'); return p; }, { replace: true });
+    }
+  }, []);
 
   // Scroll animation refs
   const [heroRef, heroInView]       = useInView(0.1);
@@ -229,15 +234,22 @@ export default function Membership() {
   const [ctaRef, ctaInView]         = useInView(0.2);
 
   // ── Auth + subscription state ──────────────────────────────────────────
-  const { isSubscribed, isLoading: authLoading, isSignedIn } = useSubscription();
+  const { isSubscribed, isLoading: authLoading, isSignedIn, subscriptionProvider } = useSubscription();
   const { openSignIn } = useClerk();
-  const createCheckout = useAction(api.stripe.createSubscriptionCheckout);
-  const getPortalUrl   = useAction(api.stripe.getCustomerPortalUrl);
 
+  // Stripe
+  const createStripeCheckout = useAction(api.stripe.createSubscriptionCheckout);
+  const getPortalUrl = useAction(api.stripe.getCustomerPortalUrl);
+  // Paystack
+  const createPaystackCheckout = useAction(api.functions.paystack.createPaystackSubscriptionCheckout);
+
+  const [paymentMethod, setPaymentMethod] = useState('stripe'); // 'stripe' | 'paystack'
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   const handleSubscribe = async () => {
     if (authLoading || checkoutLoading) return;
+    setCheckoutError('');
 
     if (!isSignedIn) {
       openSignIn();
@@ -245,18 +257,28 @@ export default function Membership() {
     }
 
     setCheckoutLoading(true);
+    const origin = window.location.origin;
     try {
       if (isSubscribed) {
+        if (subscriptionProvider === 'paystack') {
+          setCheckoutError('To manage your Paystack subscription, check the confirmation email from Paystack or contact us directly.');
+          return;
+        }
         const result = await getPortalUrl();
         if (result?.url) window.location.href = result.url;
+      } else if (paymentMethod === 'paystack') {
+        const result = await createPaystackCheckout({
+          billing,
+          successUrl: `${origin}/membership?success=true`,
+        });
+        if (result?.url) window.location.href = result.url;
       } else {
-        const priceId = PRICE_IDS[billing];
-        const result  = await createCheckout({ priceId });
+        const result = await createStripeCheckout({ billing });
         if (result?.url) window.location.href = result.url;
       }
     } catch (err) {
       console.error('Subscription error:', err);
-      alert('Something went wrong. Please try again.');
+      setCheckoutError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setCheckoutLoading(false);
     }
@@ -267,6 +289,37 @@ export default function Membership() {
 
   return (
     <div className="bg-midnight min-h-screen pt-20">
+
+      {/* ── SUBSCRIPTION SUCCESS BANNER ──────────────────────────────────── */}
+      {showSuccess && (
+        <div
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[9998] w-full max-w-sm px-4"
+          style={{ animation: 'fadeInUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards' }}
+        >
+          <div
+            className="flex items-center gap-3 px-5 py-4"
+            style={{
+              background: '#0A0A0A',
+              border: '1px solid rgba(229,57,53,0.5)',
+              boxShadow: '0 0 30px rgba(229,57,53,0.1)',
+              clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
+            }}
+          >
+            <svg className="w-5 h-5 flex-shrink-0 text-crimson" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <div className="flex-1">
+              <p className="font-montserrat font-bold text-sm text-white">You're in. Welcome to the Pass.</p>
+              <p className="font-montserrat text-xs text-urban/50 mt-0.5">Early access and exclusive drops are now unlocked.</p>
+            </div>
+            <button onClick={() => setShowSuccess(false)} className="text-urban/40 hover:text-white transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section
@@ -596,6 +649,53 @@ export default function Membership() {
               ))}
             </ul>
 
+            {/* Payment method selector — only shown when not yet subscribed */}
+            {!isSubscribed && isSignedIn && (
+              <div className="mb-6">
+                <p className="font-montserrat text-[10px] text-urban/35 uppercase tracking-widest mb-3">
+                  Pay with
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'stripe',    label: 'Stripe',    sub: 'Card · International' },
+                    { id: 'paystack',  label: 'Paystack',  sub: 'Card · MoMo · Africa' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setPaymentMethod(opt.id)}
+                      className="flex flex-col items-center py-3 px-2 transition-all duration-200"
+                      style={{
+                        background: paymentMethod === opt.id ? 'rgba(229,57,53,0.08)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${paymentMethod === opt.id ? 'rgba(229,57,53,0.5)' : 'rgba(255,255,255,0.07)'}`,
+                        clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
+                      }}
+                    >
+                      <span
+                        className="font-montserrat font-bold text-xs"
+                        style={{ color: paymentMethod === opt.id ? '#E53935' : '#fff' }}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="font-montserrat text-[9px] text-urban/40 mt-0.5">{opt.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Checkout error */}
+            {checkoutError && (
+              <div
+                className="flex items-start gap-2 px-4 py-3 mb-2"
+                style={{ background: 'rgba(229,57,53,0.08)', border: '1px solid rgba(229,57,53,0.25)' }}
+              >
+                <svg className="w-4 h-4 flex-shrink-0 text-crimson mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <p className="font-montserrat text-xs text-crimson/90 leading-relaxed">{checkoutError}</p>
+              </div>
+            )}
+
             {/* CTA */}
             <button
               onClick={handleSubscribe}
@@ -608,11 +708,13 @@ export default function Membership() {
                   ? 'Sign In to Get the Pass'
                   : isSubscribed
                     ? 'Manage Your Pass'
-                    : 'Get the BiigggX Pass'}
+                    : paymentMethod === 'paystack'
+                      ? 'Get the Pass via Paystack'
+                      : 'Get the BiigggX Pass'}
             </button>
 
             <p className="font-montserrat text-[10px] text-urban/25 text-center mt-4 uppercase tracking-widest">
-              Secure payment via Stripe · Cancel anytime
+              Secure payment via {paymentMethod === 'paystack' ? 'Paystack' : 'Stripe'} · Cancel anytime
             </p>
           </div>
         </div>

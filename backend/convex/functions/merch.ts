@@ -1,5 +1,16 @@
 import { query, mutation } from '../_generated/server';
 import { v } from 'convex/values';
+import type { Id } from '../_generated/dataModel';
+import type { MutationCtx } from '../_generated/server';
+
+/** Throws if the caller is not authenticated as an admin. */
+async function requireAdmin(ctx: MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error('Unauthorized: must be signed in.');
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) throw new Error('ADMIN_EMAIL is not configured. Run: npx convex env set ADMIN_EMAIL you@domain.com');
+  if (identity.email !== adminEmail) throw new Error('Unauthorized: admin access required.');
+}
 
 /**
  * Get all active merch items
@@ -87,6 +98,7 @@ export const createMerch = mutation({
     stripeProductId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return await ctx.db.insert('merch', {
       ...args,
       isActive: true,
@@ -145,5 +157,89 @@ export const seedMerch = mutation({
       ids.push(id);
     }
     return ids;
+  },
+});
+
+// ─── Admin functions ───────────────────────────────────────────────────────────
+
+/**
+ * Get all merch items including inactive (admin only)
+ */
+export const getAllMerch = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query('merch').order('desc').collect();
+  },
+});
+
+/**
+ * Update a merch item (admin)
+ */
+export const updateMerch = mutation({
+  args: {
+    id: v.id('merch'),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    category: v.optional(
+      v.union(
+        v.literal('hoodie'),
+        v.literal('cap'),
+        v.literal('sticker'),
+        v.literal('limited')
+      )
+    ),
+    price: v.optional(v.number()),
+    inventory: v.optional(v.number()),
+    imageURL: v.optional(v.string()),
+    isActive: v.optional(v.boolean()),
+    isFeatured: v.optional(v.boolean()),
+    isExclusive: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const { id, ...fields } = args;
+    const patch: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(fields)) {
+      if (val !== undefined) patch[k] = val;
+    }
+    await ctx.db.patch(id, patch);
+    return id;
+  },
+});
+
+/**
+ * Delete a merch item (admin)
+ */
+export const deleteMerch = mutation({
+  args: { id: v.id('merch') },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    await ctx.db.delete(args.id);
+    return { success: true };
+  },
+});
+
+/**
+ * Generate a Convex Storage upload URL for merch images
+ */
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Resolve a storageId to a CDN URL and save it as the merch imageURL
+ */
+export const saveMerchImage = mutation({
+  args: { id: v.id('merch'), storageId: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const url = await ctx.storage.getUrl(args.storageId as Id<'_storage'>);
+    if (!url) throw new Error('Could not resolve storage URL');
+    await ctx.db.patch(args.id, { imageURL: url });
+    return url;
   },
 });

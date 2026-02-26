@@ -8,7 +8,12 @@
       "Bash(cd C:/Users/Fiifi/Desktop/BiigggX/frontend && npm install @clerk/clerk-react 2>&1)",
       "Bash(ls:*)",
       "Bash(node:*)",
-      "Bash(cd C:/Users/Fiifi/Desktop/BiigggX/backend && npx convex dev --once 2>&1)"
+      "Bash(cd C:/Users/Fiifi/Desktop/BiigggX/backend && npx convex dev --once 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Fiifi\\\\Desktop\\\\BiigggX\\\\backend\" && npx convex dev --once 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Fiifi\\\\Desktop\\\\BiigggX\\\\backend\" && npx convex env set PAYSTACK_SECRET_KEY sk_test_placeholder && npx convex env set PAYSTACK_CURRENCY GHS && npx convex env set PAYSTACK_USD_RATE 1 && npx convex env set PAYSTACK_MONTHLY_PLAN_CODE PLN_placeholder_monthly && npx convex env set PAYSTACK_ANNUAL_PLAN_CODE PLN_placeholder_annual 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Fiifi\\\\Desktop\\\\BiigggX\\\\backend\" && npx convex env set PAYSTACK_MONTHLY_PLAN_CODE PLN_placeholder_monthly 2>&1 && npx convex env set PAYSTACK_ANNUAL_PLAN_CODE PLN_placeholder_annual 2>&1)",
+      "Bash(npm show @convex-dev/stripe version --prefix \"C:/Users/Fiifi/Desktop/BiigggX/backend\" 2>/dev/null || npm view @convex-dev/stripe version 2>/dev/null)",
+      "Bash(cd \"C:/Users/Fiifi/Desktop/BiigggX/backend\" && npx convex deploy 2>&1)"
     ]
   }
 }

@@ -31,8 +31,9 @@ export const placeOrder = mutation({
         country: v.string(),
       })
     ),
-    paymentProvider: v.optional(v.union(v.literal('stripe'), v.literal('paypal'))),
+    paymentProvider: v.optional(v.union(v.literal('stripe'), v.literal('paypal'), v.literal('paystack'))),
     stripeSessionId: v.optional(v.string()),
+    paystackReference: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -61,10 +62,11 @@ export const placeOrder = mutation({
       currency: args.currency || 'USD',
       shippingAddress: args.shippingAddress,
       stripeSessionId: args.stripeSessionId,
+      paystackReference: args.paystackReference,
       paymentInfo: args.paymentProvider
         ? {
             provider: args.paymentProvider,
-            sessionId: args.stripeSessionId,
+            sessionId: args.stripeSessionId ?? args.paystackReference,
           }
         : undefined,
       createdAt: now,
@@ -130,6 +132,11 @@ export const updateOrderBySession = mutation({
       .first();
     if (!order) return { success: false, error: 'Order not found' };
 
+    // Idempotency: if already paid, skip to avoid double inventory decrement
+    if (order.status === 'paid') {
+      return { success: true, orderId: order._id };
+    }
+
     await ctx.db.patch(order._id, {
       status: args.status,
       updatedAt: Date.now(),
@@ -155,7 +162,7 @@ export const updateOrderBySession = mutation({
 });
 
 /**
- * Get orders for a user
+ * Get orders for a user (admin helper — requires explicit userId)
  */
 export const getUserOrders = query({
   args: { userId: v.id('users') },
@@ -169,11 +176,103 @@ export const getUserOrders = query({
 });
 
 /**
+ * Get all orders for the currently authenticated user.
+ * Merges orders linked by userId AND orders linked by guestEmail so that
+ * purchases made before sign-up also appear.
+ */
+export const getMyOrders = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const email = identity.email ?? '';
+
+    // Find the Convex user record for this identity
+    const user = email
+      ? await ctx.db
+          .query('users')
+          .withIndex('by_email', (q) => q.eq('email', email))
+          .first()
+      : null;
+
+    // Collect orders linked by userId
+    const byUser = user
+      ? await ctx.db
+          .query('orders')
+          .withIndex('by_user', (q) => q.eq('userId', user._id))
+          .order('desc')
+          .collect()
+      : [];
+
+    // Collect orders linked by guestEmail (pre-account purchases)
+    const byEmail = email
+      ? await ctx.db
+          .query('orders')
+          .withIndex('by_guest_email', (q) => q.eq('guestEmail', email))
+          .order('desc')
+          .collect()
+      : [];
+
+    // Merge and deduplicate, newest first
+    const seen = new Set(byUser.map((o) => o._id));
+    const merged = [...byUser];
+    for (const o of byEmail) {
+      if (!seen.has(o._id)) {
+        seen.add(o._id);
+        merged.push(o);
+      }
+    }
+    merged.sort((a, b) => b.createdAt - a.createdAt);
+    return merged;
+  },
+});
+
+/**
  * Get order by ID
  */
 export const getOrderById = query({
   args: { orderId: v.id('orders') },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.orderId);
+  },
+});
+
+/**
+ * Update order status by Paystack reference (called from Paystack webhook)
+ */
+export const updateOrderByPaystackRef = mutation({
+  args: {
+    reference: v.string(),
+    status: v.union(v.literal('paid'), v.literal('cancelled')),
+  },
+  handler: async (ctx, args) => {
+    const order = await ctx.db
+      .query('orders')
+      .withIndex('by_paystack_ref', (q) => q.eq('paystackReference', args.reference))
+      .first();
+
+    if (!order) return { success: false, error: 'Order not found' };
+
+    // Idempotency: if already paid, skip to avoid double inventory decrement
+    if (order.status === 'paid') {
+      return { success: true, orderId: order._id };
+    }
+
+    await ctx.db.patch(order._id, { status: args.status, updatedAt: Date.now() });
+
+    // Decrement inventory only after payment confirmed
+    if (args.status === 'paid') {
+      for (const item of order.items) {
+        const merch = await ctx.db.get(item.merchId);
+        if (merch) {
+          await ctx.db.patch(item.merchId, {
+            inventory: Math.max(0, merch.inventory - item.quantity),
+          });
+        }
+      }
+    }
+
+    return { success: true, orderId: order._id };
   },
 });

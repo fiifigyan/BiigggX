@@ -79,22 +79,25 @@ export default defineSchema({
     ),
     paymentInfo: v.optional(
       v.object({
-        provider: v.union(v.literal('stripe'), v.literal('paypal')),
+        provider: v.union(v.literal('stripe'), v.literal('paypal'), v.literal('paystack')),
         sessionId: v.optional(v.string()),
         paymentIntentId: v.optional(v.string()),
         paymentMethodType: v.optional(v.string()),
       })
     ),
     stripeSessionId: v.optional(v.string()),
+    paystackReference: v.optional(v.string()),
     trackingNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_user', ['userId'])
+    .index('by_guest_email', ['guestEmail'])
     .index('by_status', ['status'])
     .index('by_created', ['createdAt'])
-    .index('by_session', ['stripeSessionId']),
+    .index('by_session', ['stripeSessionId'])
+    .index('by_paystack_ref', ['paystackReference']),
 
   // ── Media ──────────────────────────────────────────────────────────────────
   media: defineTable({
@@ -153,6 +156,21 @@ export default defineSchema({
   })
     .index('by_status', ['status'])
     .index('by_created', ['createdAt']),
+
+  // ── Paystack Subscriptions ─────────────────────────────────────────────────
+  paystackSubscriptions: defineTable({
+    userId: v.optional(v.id('users')),
+    email: v.string(),
+    subscriptionCode: v.string(),
+    customerCode: v.string(),
+    planCode: v.string(),
+    status: v.string(), // 'active' | 'cancelled' | 'non-renewing' | 'attention'
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_subscription_code', ['subscriptionCode'])
+    .index('by_email', ['email']),
 
   // ── Brand Content ──────────────────────────────────────────────────────────
   brandContent: defineTable({

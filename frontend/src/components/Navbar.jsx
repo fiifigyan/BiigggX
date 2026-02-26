@@ -113,6 +113,12 @@ export default function Navbar() {
                 </SignInButton>
               </SignedOut>
               <SignedIn>
+                <Link
+                  to="/orders"
+                  className={`hidden md:block nav-link ${location.pathname === '/orders' ? 'active' : ''}`}
+                >
+                  Orders
+                </Link>
                 <UserButton
                   appearance={{
                     elements: {
@@ -207,6 +213,19 @@ export default function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <Link
+                to="/orders"
+                className={`font-bebas text-4xl tracking-wider transition-all duration-300 ${
+                  location.pathname === '/orders' ? 'text-neon' : 'text-urban/60 hover:text-white'
+                }`}
+                style={{
+                  transitionDelay: menuOpen ? '360ms' : '0ms',
+                  transform: menuOpen ? 'translateX(0)' : 'translateX(-30px)',
+                  opacity: menuOpen ? 1 : 0,
+                }}
+              >
+                Orders
+              </Link>
               <div className="flex items-center gap-3">
                 <span className="font-montserrat text-xs text-urban/40 uppercase tracking-widest">Account</span>
                 <UserButton

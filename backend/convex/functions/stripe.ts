@@ -1,6 +1,6 @@
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { api } from '../_generated/api';
+import { api, internal } from '../_generated/api';
 
 /**
  * Create a Stripe Checkout Session.
@@ -100,23 +100,38 @@ export const handleStripeWebhook = action({
     const data = event.data.object as any;
 
     switch (event.type) {
-      case 'checkout.session.completed':
-        await ctx.runMutation(
-          // Use internal string reference to avoid circular import
-          'functions/orders:updateOrderBySession' as never,
-          {
-            sessionId: data.id,
-            status: 'paid',
-            paymentIntentId: data.payment_intent,
+      case 'checkout.session.completed': {
+        const result = await ctx.runMutation(api.functions.orders.updateOrderBySession, {
+          sessionId: data.id,
+          status: 'paid',
+          paymentIntentId: data.payment_intent,
+        });
+
+        // Send order confirmation email
+        if (result.success && result.orderId) {
+          const order = await ctx.runQuery(api.functions.orders.getOrderById, {
+            orderId: result.orderId,
+          });
+          const customerEmail = order?.guestEmail ?? data.customer_email ?? null;
+          if (order && customerEmail) {
+            await ctx.runAction(internal.functions.email.sendOrderConfirmationEmail, {
+              to: customerEmail,
+              orderId: result.orderId,
+              items: order.items,
+              totalAmount: order.totalAmount,
+              currency: order.currency ?? 'USD',
+              paymentProvider: 'stripe',
+            });
           }
-        );
+        }
         break;
+      }
 
       case 'checkout.session.expired':
-        await ctx.runMutation(
-          'functions/orders:updateOrderBySession' as never,
-          { sessionId: data.id, status: 'cancelled' }
-        );
+        await ctx.runMutation(api.functions.orders.updateOrderBySession, {
+          sessionId: data.id,
+          status: 'cancelled',
+        });
         break;
 
       default:

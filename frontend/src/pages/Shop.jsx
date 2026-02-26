@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const PAGE_SIZE = 16;
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { useInView } from '../hooks/useInView';
@@ -43,6 +45,10 @@ function SkeletonCard() {
 export default function Shop() {
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('featured');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reset pagination when filter or sort changes
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [category, sort]);
   const [headerRef, headerInView] = useInView(0.1);
   const [gridRef, gridInView] = useInView(0.05);
 
@@ -223,7 +229,7 @@ export default function Shop() {
             )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-              {filtered.map((product, i) => (
+              {filtered.slice(0, visibleCount).map((product, i) => (
                 <div
                   key={product._id}
                   style={{
@@ -236,6 +242,21 @@ export default function Shop() {
                 </div>
               ))}
             </div>
+
+            {/* Load More */}
+            {filtered.length > visibleCount && (
+              <div className="flex flex-col items-center gap-2 mt-12">
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="btn-neon"
+                >
+                  Load More — {filtered.length - visibleCount} remaining
+                </button>
+                <p className="font-montserrat text-[10px] text-urban/25 uppercase tracking-widest">
+                  Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} pieces
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

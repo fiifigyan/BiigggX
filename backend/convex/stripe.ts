@@ -55,12 +55,13 @@ export const getOrCreateCustomer = action({
 
 /**
  * Create a checkout session for a subscription.
- * Automatically creates/links a customer first.
+ * Price IDs are read from Convex env vars (never sent from the client):
+ *   STRIPE_MONTHLY_PRICE_ID  — set via `npx convex env set STRIPE_MONTHLY_PRICE_ID price_xxx`
+ *   STRIPE_ANNUAL_PRICE_ID   — set via `npx convex env set STRIPE_ANNUAL_PRICE_ID price_xxx`
  */
 export const createSubscriptionCheckout = action({
   args: {
-    priceId: v.string(),
-    quantity: v.optional(v.number()),
+    billing: v.union(v.literal("monthly"), v.literal("annual")),
   },
   returns: v.object({
     sessionId: v.string(),
@@ -70,6 +71,18 @@ export const createSubscriptionCheckout = action({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const priceId =
+      args.billing === "annual"
+        ? process.env.STRIPE_ANNUAL_PRICE_ID
+        : process.env.STRIPE_MONTHLY_PRICE_ID;
+
+    if (!priceId) {
+      throw new Error(
+        `STRIPE_${args.billing.toUpperCase()}_PRICE_ID is not set. ` +
+        `Run: npx convex env set STRIPE_${args.billing.toUpperCase()}_PRICE_ID price_xxx`
+      );
+    }
+
     const customerResult = await stripeClient.getOrCreateCustomer(ctx, {
       userId: identity.subject,
       email: identity.email,
@@ -77,10 +90,9 @@ export const createSubscriptionCheckout = action({
     });
 
     return await stripeClient.createCheckoutSession(ctx, {
-      priceId: args.priceId,
+      priceId,
       customerId: customerResult.customerId,
       mode: "subscription",
-      quantity: args.quantity,
       successUrl: `${getAppUrl()}/?success=true`,
       cancelUrl: `${getAppUrl()}/?canceled=true`,
       metadata: {
@@ -112,6 +124,7 @@ export const getUserSubscriptions = query({
       quantity: v.optional(v.number()),
       currentPeriodEnd: v.number(),
       cancelAtPeriodEnd: v.boolean(),
+      cancelAt: v.optional(v.number()),
       metadata: v.optional(v.any()),
       userId: v.optional(v.string()),
       orgId: v.optional(v.string()),
@@ -144,6 +157,7 @@ export const getSubscriptionInfo = query({
       quantity: v.optional(v.number()),
       currentPeriodEnd: v.number(),
       cancelAtPeriodEnd: v.boolean(),
+      cancelAt: v.optional(v.number()),
       metadata: v.optional(v.any()),
       userId: v.optional(v.string()),
       orgId: v.optional(v.string()),

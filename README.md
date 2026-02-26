@@ -153,6 +153,10 @@ npx convex deploy
 # Auto-deploys to Convex cloud infrastructure
 ```
 
+#  And register your webhooks pointing to prod:
+#  - Stripe: https://savory-setter-483.convex.site/api/stripe/webhook
+#  - Paystack: https://savory-setter-483.convex.site/api/paystack/webhook
+
 ---
 
 ## Connecting Live Data

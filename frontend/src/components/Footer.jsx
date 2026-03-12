@@ -59,10 +59,10 @@ const FOOTER_LINKS = [
     { label: 'Limited Drops', path: '/shop?cat=limited' },
   ]},
   { group: 'Legal', links: [
-    { label: 'Privacy Policy', path: '#' },
-    { label: 'Terms of Service', path: '#' },
-    { label: 'Returns', path: '#' },
-    { label: 'Shipping', path: '#' },
+    { label: 'Privacy Policy', path: '/privacy-policy' },
+    { label: 'Terms of Service', path: '/terms-of-service' },
+    { label: 'Returns', path: '/returns' },
+    { label: 'Shipping', path: '/shipping' },
   ]},
 ];
 

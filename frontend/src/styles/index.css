@@ -18,6 +18,10 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  .bg-midnight {
+    background-color: #0A0A0A;
+  }
+
   h1, h2, h3 {
     font-family: 'Bebas Neue', cursive;
     letter-spacing: 0.05em;

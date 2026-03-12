@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
 
 const CATEGORIES = {
@@ -84,12 +84,23 @@ export default function ProductCard({ product, isSubscribed = false }) {
   const [showSizes, setShowSizes] = useState(false);
   const { addItem } = useCartStore();
   const cardRef = useRef(null);
+  const navigate = useNavigate();
 
   const category = CATEGORIES[product.category] || CATEGORIES.hoodie;
   const hasInventory = product.inventory > 0;
   const isLimited = product.category === 'limited';
   const isExclusive = product.isExclusive === true;
   const isLocked = isExclusive && !isSubscribed;
+
+  const handleCardClick = (event) => {
+    if (isLocked) return;
+    // Don't navigate if any interactive element is clicked.
+    // This includes buttons, links, or any element inside them.
+    if (event.target.closest('button, a')) {
+      return;
+    }
+    navigate(`/shop/${product._id}`);
+  };
 
   // Tilt effect on hover
   const handleMouseMove = (e) => {
@@ -126,10 +137,11 @@ export default function ProductCard({ product, isSubscribed = false }) {
     <div
       ref={cardRef}
       className="product-card group relative"
-      style={{ transition: 'transform 0.15s ease, box-shadow 0.3s ease' }}
+      style={{ transition: 'transform 0.15s ease, box-shadow 0.3s ease', cursor: isLocked ? 'default' : 'pointer' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
+      onClick={handleCardClick}
     >
       <SplatterEffect active={addedSplatter} color={category.color} />
 

@@ -6,7 +6,10 @@ function useInView(threshold = 0.15) {
   const [inView, setInView] = useState(false);
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
+      ([entry]) => { if (entry.isIntersecting) { 
+        setInView(true); 
+        observer.unobserve(entry.target); 
+      } },
       { threshold }
     );
     if (ref.current) observer.observe(ref.current);
@@ -17,57 +20,33 @@ function useInView(threshold = 0.15) {
 
 const TIMELINE = [
   {
-    year: '2020',
-    title: 'The Name Sticks',
-    desc: 'The nickname "Biiggg" — triple G — was born on the streets. Not a typo, a statement. Three times the size, three times the noise.',
-    color: '#E53935',
-  },
-  {
-    year: '2022',
-    title: 'X Enters the Picture',
-    desc: 'The X wasn\'t chosen — it claimed its place. X marks the unknown, the crossroads, the untraceable. "X marks the moment" became a rallying call.',
-    color: '#00BFFF',
-  },
-  {
-    year: '2023',
-    title: 'First Drop Sells Out',
-    desc: '50 hoodies. 48 hours. Sold out. The streets confirmed what we already knew: Biiggg X was real. The movement had begun.',
-    color: '#E53935',
-  },
-  {
-    year: '2024',
-    title: 'Going Global',
-    desc: 'From local walls to worldwide shipping. 30+ cities, 1 vision. The graffiti reached further than the paint ever could.',
-    color: '#00BFFF',
-  },
-  {
-    year: '2025',
-    title: 'The Collab Era',
-    desc: 'Artists, musicians, skaters — the X became a gathering point. Collaborations that blurred the lines between fashion and art.',
+    year: '2026',
+    title: 'The Vision Forms',
+    desc: 'A new identity, "Biiggg X," is born from a mindset of thinking bigger and embracing the unknown.',
     color: '#E53935',
   },
   {
     year: '2026',
-    title: 'Now',
-    desc: 'You\'re here. The drop is live. The X is everywhere. This is just the beginning — the wall is still blank, and we\'re just getting warmed up.',
+    title: 'The Foundation is Laid',
+    desc: 'The brand is established, and the first creative pieces emerge, marking the beginning of a new movement.',
     color: '#00BFFF',
   },
 ];
 
 const PHILOSOPHY = [
   {
-    title: 'Refuse the Ordinary',
-    body: 'Generic is the enemy. Every Biiggg X piece starts with the question: what would make someone stop and look twice?',
+    title: 'Embrace the Unknown',
+    body: 'The X represents the unknown. Growth happens when we step into uncertainty and choose courage over comfort.',
     icon: '✕',
   },
   {
-    title: 'The Street Is the Canvas',
-    body: 'We don\'t design in boardrooms. The city is our studio. Its walls, its energy, its people — all of it feeds the work.',
+    title: 'Define Your Identity',
+    body: 'Biiggg X stands for self-definition. We believe identity is not given — it is created through action and bold decisions.',
     icon: '◎',
   },
   {
-    title: 'Scarcity with Purpose',
-    body: 'Limited means something here. We don\'t flood the market. Every drop is a moment in time — and moments don\'t repeat.',
+    title: 'Make The Biiggg Move',
+    body: 'Life is filled with moments that test who we are. Biiggg X exists to remind people to choose the bigger path when those moments arrive.',
     icon: '△',
   },
 ];
@@ -77,6 +56,8 @@ export default function About() {
   const [timelineRef, timelineInView] = useInView(0.05);
   const [philoRef, philoInView] = useInView(0.1);
   const [statsRef, statsInView] = useInView(0.2);
+  const [momentsRef, momentsInView] = useInView(0.2);
+
 
   return (
     <div className="bg-midnight min-h-screen pt-20">
@@ -118,7 +99,9 @@ export default function About() {
                   </span>
                 </h1>
                 <p className="font-montserrat text-base text-urban/70 leading-relaxed max-w-lg">
-                  Biiggg X wasn't born in a design studio or a marketing meeting. It was tagged on a wall, spoken on a corner, and worn by people who don't follow — they lead.
+                  Biiggg X is more than a name. It is a symbol of bold identity and limitless potential.
+                  The X represents the unknown — the moments in life where decisions define who we become.
+                  Biiggg X stands for those who refuse to stay small and choose the bigger path when their moment arrives.
                 </p>
               </div>
             </div>
@@ -151,7 +134,7 @@ export default function About() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-midnight px-4 py-2 text-center">
                     <span className="font-bebas text-4xl text-white tracking-widest block">EST</span>
-                    <span className="font-montserrat text-xs text-urban/50 tracking-[0.3em]">2020</span>
+                    <span className="font-montserrat text-xs text-urban/50 tracking-[0.3em]">2026</span>
                   </div>
                 </div>
 
@@ -175,6 +158,27 @@ export default function About() {
         </div>
       </section>
 
+      {/*The X Moments */}
+      <section ref={momentsRef} className="py-12 px-4 sm:px-6 lg:px-8 bg-surface border-y border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="flex items-center">
+              <div>
+                <h2 className="section-title">The <span>X Moment</span></h2>
+                <p className="font-montserrat text-sm text-urban/40 uppercase tracking-widest mt-2">
+                  The moment that defines you
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <p className="font-montserrat text-base text-urban/70 leading-relaxed">
+                Everyone faces moments in life where the future is uncertain. Moments where fear says stay safe, and ambition says move forward. Biiggg X calls these moments X Moments — the moments where you decide whether to remain the same, or become something greater. When that moment comes… make the Biiggg move.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Stats */}
       <section ref={statsRef} className="py-12 px-4 sm:px-6 lg:px-8 bg-surface border-y border-white/5">
         <div className="max-w-7xl mx-auto">
@@ -182,7 +186,7 @@ export default function About() {
             {[
               { value: '30+', label: 'Cities Tagged' },
               { value: '1000+', label: 'Pieces Dropped' },
-              { value: '6', label: 'Years Running' },
+              { value: '1', label: 'Years Running' },
               { value: '∞', label: 'Walls to Tag' },
             ].map((stat, i) => (
               <div

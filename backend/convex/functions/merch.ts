@@ -50,6 +50,7 @@ export const getMerch = query({
 
 /**
  * Get a single merch item by ID
+ * @param {string} id - The id of the merch item.
  */
 export const getMerchById = query({
   args: { id: v.id('merch') },

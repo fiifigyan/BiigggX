@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useMutation, useQuery, useAction } from 'convex/react';
 // eslint-disable-next-line import/no-unresolved
 import { api } from '@convex/api';
 import { useStorageUpload } from '../hooks/useAdminStorage';
+import Modal from '../components/Modal';
 
 const CATEGORIES = ['hoodie', 'cap', 'sticker', 'limited'];
 const MEDIA_TYPES = ['reel', 'showcase', 'merch', 'campaign', 'reveal', 'behind-the-scenes'];
@@ -260,7 +261,7 @@ const EMPTY_ADD_MERCH = {
   description: '', isFeatured: false, isExclusive: false,
 };
 
-function MerchTab() {
+function MerchTab({ showModal }) {
   const allMerch = useQuery(api.functions.merch.getAllMerch, {});
   const createMerch = useMutation(api.functions.merch.createMerch);
   const updateMerch = useMutation(api.functions.merch.updateMerch);
@@ -532,7 +533,11 @@ function MerchTab() {
             onStartEdit={() => { startEdit(item); setShowAdd(false); }}
             onCancelEdit={() => { setEditingId(null); setEditFile(null); setEditPreview(null); }}
             onSave={() => handleSave(item._id)}
-            onDelete={() => { if (window.confirm(`Delete "${item.name}"?`)) deleteMerch({ id: item._id }); }}
+            onDelete={() => showModal(
+              'Delete Merch Item',
+              `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+              () => deleteMerch({ id: item._id })
+            )}
             onPickEditImage={pickEdit}
             onQuickUpload={(file) => handleQuickImageUpload(item._id, file)}
             saving={saving && editingId === item._id}
@@ -703,7 +708,7 @@ const EMPTY_ADD_MEDIA = {
   isPublished: true,
 };
 
-function MediaTab() {
+function MediaTab({ showModal }) {
   const allMedia = useQuery(api.functions.media.getAllMedia, {});
   const addMedia = useMutation(api.functions.media.addMedia);
   const updateMedia = useMutation(api.functions.media.updateMedia);
@@ -964,9 +969,11 @@ function MediaTab() {
             key={item._id}
             item={item}
             onTogglePublish={() => updateMedia({ id: item._id, isPublished: !item.isPublished })}
-            onDelete={() => {
-              if (window.confirm(`Delete "${item.title}"?`)) deleteMedia({ id: item._id });
-            }}
+            onDelete={() => showModal(
+              'Delete Media Item',
+              `Are you sure you want to delete "${item.title}"? This action cannot be undone.`,
+              () => deleteMedia({ id: item._id })
+            )}
           />
         ))}
       </div>
@@ -1043,6 +1050,22 @@ export default function Admin() {
     sessionStorage.getItem('bx_admin') === '1'
   );
   const [tab, setTab] = useState('merch');
+  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+
+  function showModal(title, message, onConfirm) {
+    setModalState({ isOpen: true, title, message, onConfirm });
+  }
+
+  function closeModal() {
+    setModalState({ isOpen: false, title: '', message: '', onConfirm: null });
+  }
+
+  async function handleConfirm() {
+    if (modalState.onConfirm) {
+      await modalState.onConfirm();
+    }
+    closeModal();
+  }
 
   if (!unlocked) {
     return <PasswordGate onUnlock={() => setUnlocked(true)} />;
@@ -1050,6 +1073,15 @@ export default function Admin() {
 
   return (
     <div className="bg-midnight min-h-screen pt-20">
+      <Modal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        onConfirm={handleConfirm}
+        title={modalState.title}
+      >
+        {modalState.message}
+      </Modal>
+
       {/* Subtle grid bg */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.015]"
@@ -1099,7 +1131,7 @@ export default function Admin() {
         </div>
 
         {/* Tab content */}
-        {tab === 'merch' ? <MerchTab /> : <MediaTab />}
+        {tab === 'merch' ? <MerchTab showModal={showModal} /> : <MediaTab showModal={showModal} />}
       </div>
     </div>
   );

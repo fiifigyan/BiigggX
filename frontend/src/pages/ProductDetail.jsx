@@ -1,9 +1,8 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../backend/convex/_generated/api';
 import useCartStore from '../store/cartStore';
-import { useSubscription } from '../hooks/useSubscription';
 
 
 const CATEGORIES = {
@@ -24,10 +23,10 @@ const CATEGORIES = {
 
 export default function ProductDetail() {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const { addItem } = useCartStore();
-  const { isSubscribed } = useSubscription();
 
-  const product = useQuery(api.merch.getMerchById, { id: productId });
+  const product = useQuery(api.functions.merch.getMerchById, { id: productId });
 
   if (product === undefined) {
     return <div>Loading...</div>;
@@ -41,7 +40,7 @@ export default function ProductDetail() {
   const hasInventory = product.inventory > 0;
   const isLimited = product.category === 'limited';
   const isExclusive = product.isExclusive === true;
-  const isLocked = isExclusive && !isSubscribed;
+  const isLocked = false; // Subscriptions disabled
 
   const handleAddToCart = () => {
     if (!hasInventory || isLocked) return;
@@ -50,6 +49,16 @@ export default function ProductDetail() {
 
   return (
     <div className="bg-midnight text-white min-h-screen">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/shop')}
+        className="fixed top-20 left-4 z-40 flex items-center gap-2 text-urban/60 hover:text-white transition-colors duration-200 font-montserrat text-sm uppercase tracking-widest"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
         <div className="max-w-4xl mx-auto py-12 px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="relative">
@@ -87,7 +96,7 @@ export default function ProductDetail() {
                                color: '#00BFFF',
                              }}
                            >
-                             {isSubscribed ? 'Exclusive' : 'Members Only'}
+                             Exclusive
                            </span>
                         )}
                          {isLimited && !isExclusive && (
@@ -115,7 +124,7 @@ export default function ProductDetail() {
                                 {product.inventory > 0 ? `${product.inventory} left` : 'Sold Out'}
                             </span>
                         </div>
-                        {isLocked ? (
+                        {false ? (
                              <a
                              href="/membership"
                              className="w-full font-montserrat font-bold text-xs uppercase tracking-widest py-2.5 flex items-center justify-center gap-2 transition-all duration-300"

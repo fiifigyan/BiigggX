@@ -9,7 +9,6 @@ const NAV_LINKS = [
   { label: 'Shop', path: '/shop' },
   { label: 'Media', path: '/media' },
   { label: 'Contact', path: '/contact' },
-  { label: 'Pass', path: '/membership', highlight: true },
 ];
 
 export default function Navbar() {

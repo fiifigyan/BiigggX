@@ -77,7 +77,7 @@ function LockIcon() {
   );
 }
 
-export default function ProductCard({ product, isSubscribed = false }) {
+export default function ProductCard({ product }) {
   const [hovered, setHovered] = useState(false);
   const [addedSplatter, setAddedSplatter] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -90,7 +90,7 @@ export default function ProductCard({ product, isSubscribed = false }) {
   const hasInventory = product.inventory > 0;
   const isLimited = product.category === 'limited';
   const isExclusive = product.isExclusive === true;
-  const isLocked = isExclusive && !isSubscribed;
+  const isLocked = false;
 
   const handleCardClick = (event) => {
     if (isLocked) return;
@@ -194,7 +194,7 @@ export default function ProductCard({ product, isSubscribed = false }) {
                 color: '#00BFFF',
               }}
             >
-              {isSubscribed ? 'Exclusive' : 'Members Only'}
+              Exclusive
             </span>
           ) : (
             <span

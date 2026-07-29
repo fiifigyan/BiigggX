@@ -32,6 +32,17 @@ const TYPE_COLORS = {
   'behind-the-scenes': '#B0B0B0',
 };
 
+// Generate embed URLs based on platform and embedId
+function getEmbedUrl(platform, embedId) {
+  const urlMap = {
+    youtube: `https://www.youtube.com/embed/${embedId}?rel=0&controls=1&modestbranding=1`,
+    instagram: `https://www.instagram.com/p/${embedId}/embed/captioned/`,
+    tiktok: `https://www.tiktok.com/embed/v2/${embedId}`,
+    twitter: `https://platform.twitter.com/embed/Tweet.html?id=${embedId}`,
+  };
+  return urlMap[platform] || null;
+}
+
 function SkeletonVideoCard() {
   return (
     <div
@@ -52,18 +63,36 @@ function VideoCard({ video }) {
   const videoRef = useRef(null);
   const color = TYPE_COLORS[video.type] || '#E53935';
 
+  // Priority: embedId > url
+  const hasEmbed = video.embedId && video.platform;
+  const embedUrl = hasEmbed ? getEmbedUrl(video.platform, video.embedId) : null;
+  const canPlay = embedUrl || video.url;
+
   return (
     <div className="video-card group cursor-pointer" onClick={() => setPlaying(!playing)}>
       {/* Thumbnail / Video player */}
       <div className="relative aspect-video overflow-hidden bg-surface-3">
-        {video.url && playing ? (
-          <video
-            ref={videoRef}
-            src={video.url}
-            autoPlay
-            controls
-            className="w-full h-full object-cover"
-          />
+        {canPlay && playing ? (
+          embedUrl ? (
+            // Embedded content (YouTube, Instagram, etc.)
+            <iframe
+              src={embedUrl}
+              className="w-full h-full"
+              frameBorder="0"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              title={video.title}
+            />
+          ) : (
+            // Direct video URL
+            <video
+              ref={videoRef}
+              src={video.url}
+              autoPlay
+              controls
+              className="w-full h-full object-cover"
+            />
+          )
         ) : (
           <div
             className="w-full h-full flex items-center justify-center relative"

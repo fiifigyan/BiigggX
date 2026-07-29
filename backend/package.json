@@ -7,8 +7,6 @@
     "deploy": "npx convex deploy"
   },
   "dependencies": {
-    "@convex-dev/stripe": "^0.1.3",
-    "convex": "^1.11.2",
-    "stripe": "^14.17.0"
+    "convex": "^1.11.2"
   }
 }

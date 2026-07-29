@@ -24,10 +24,7 @@ async function isActiveSubscriber(ctx: { runQuery: Function }, identity: { subje
   if (!identity) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const paystackSubs = (await ctx.runQuery(api.functions.paystack.getUserPaystackSubscriptions, {})) as any[];
-  if (paystackSubs.some((s) => s.status === 'active')) return true;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stripeSubs = (await ctx.runQuery(api.stripe.getUserSubscriptions, {})) as any[];
-  return stripeSubs.some((s) => s.status === 'active' || s.status === 'trialing');
+  return paystackSubs.some((s) => s.status === 'active');
 }
 
 // ─── One-time checkout ─────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '@convex/api';
 import { useStorageUpload } from '../hooks/useAdminStorage';
 import Modal from '../components/Modal';
+import EditMediaModal from '../components/EditMediaModal';
 
 const CATEGORIES = ['hoodie', 'cap', 'sticker', 'limited'];
 const MEDIA_TYPES = ['reel', 'showcase', 'merch', 'campaign', 'reveal', 'behind-the-scenes'];
@@ -721,6 +722,7 @@ function MediaTab({ showModal }) {
     useStorageUpload(api.functions.media.generateMediaUploadUrl);
 
   const [showAdd, setShowAdd] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState(EMPTY_ADD_MEDIA);
   const [urlMode, setUrlMode] = useState('paste');
   const [thumbMode, setThumbMode] = useState('paste');
@@ -968,6 +970,7 @@ function MediaTab({ showModal }) {
           <MediaRow
             key={item._id}
             item={item}
+            onEdit={() => setEditingItem(item)}
             onTogglePublish={() => updateMedia({ id: item._id, isPublished: !item.isPublished })}
             onDelete={() => showModal(
               'Delete Media Item',
@@ -977,11 +980,23 @@ function MediaTab({ showModal }) {
           />
         ))}
       </div>
+
+      {/* Edit media modal */}
+      {editingItem && (
+        <EditMediaModal
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSave={(updates) => {
+            updateMedia({ id: editingItem._id, ...updates });
+            setEditingItem(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function MediaRow({ item, onTogglePublish, onDelete }) {
+function MediaRow({ item, onEdit, onTogglePublish, onDelete }) {
   return (
     <div className="flex items-center gap-4 p-4" style={CARD}>
       {/* Thumbnail */}
@@ -1032,6 +1047,7 @@ function MediaRow({ item, onTogglePublish, onDelete }) {
 
       {/* Actions */}
       <div className="flex-shrink-0 flex items-center gap-2">
+        <GhostBtn onClick={onEdit} label="Edit" color="#00BFFF" />
         <GhostBtn
           onClick={onTogglePublish}
           label={item.isPublished ? 'Unpublish' : 'Publish'}

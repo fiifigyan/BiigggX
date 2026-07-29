@@ -80,13 +80,6 @@ export function useTimeline() {
 }
 
 /**
- * Hook for creating a Stripe checkout session
- */
-export function useStripeCheckout() {
-  return useAction(api.functions.stripe.createCheckoutSession);
-}
-
-/**
  * Hook for getting the current authenticated user's Convex record
  */
 export function useCurrentUser() {

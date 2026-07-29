@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 const PAGE_SIZE = 16;
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import SkeletonCard from '../components/SkeletonCard';
 import { useInView } from '../hooks/useInView';
 import { useMerch } from '../hooks/useConvex';
-import { useSubscription } from '../hooks/useSubscription';
 
 const CATEGORY_LABELS = {
   all:     'All Drops',
@@ -23,25 +23,6 @@ const SORT_OPTIONS = [
   { id: 'available',  label: 'In Stock Only' },
 ];
 
-// Skeleton card shown while Convex loads
-function SkeletonCard() {
-  return (
-    <div
-      className="bg-surface-2 animate-pulse"
-      style={{
-        clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
-      }}
-    >
-      <div className="aspect-square bg-surface-3" />
-      <div className="p-4 space-y-3">
-        <div className="h-3 bg-surface-3 rounded w-3/4" />
-        <div className="h-2 bg-surface-3 rounded w-1/2" />
-        <div className="h-8 bg-surface-3 rounded mt-4" />
-      </div>
-    </div>
-  );
-}
-
 export default function Shop() {
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('featured');
@@ -55,8 +36,6 @@ export default function Shop() {
   // Live Convex data — undefined while loading, array when ready
   const allProducts = useMerch();
   const isLoading = allProducts === undefined;
-
-  const { isSubscribed } = useSubscription();
 
   // Compute category counts from live data
   const categories = ['all', 'hoodie', 'cap', 'sticker', 'limited'].map((id) => ({
@@ -191,43 +170,6 @@ export default function Shop() {
               {filtered.length} {filtered.length === 1 ? 'piece' : 'pieces'} available
             </p>
 
-            {/* Upsell banner — shown when exclusive items are in the current view and user isn't subscribed */}
-            {!isSubscribed && filtered.some((p) => p.isExclusive) && (
-              <div
-                className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 py-4"
-                style={{
-                  background: 'rgba(0,191,255,0.05)',
-                  border: '1px solid rgba(0,191,255,0.2)',
-                  clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#00BFFF" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <p className="font-montserrat text-xs text-urban/70">
-                    <span style={{ color: '#00BFFF' }} className="font-bold">Members-only drops</span> are in this collection.
-                    Get the BiigggX Pass to unlock them.
-                  </p>
-                </div>
-                <Link
-                  to="/membership"
-                  className="font-montserrat text-xs font-bold uppercase tracking-widest px-4 py-2 flex-shrink-0 transition-all duration-200"
-                  style={{
-                    color: '#00BFFF',
-                    background: 'rgba(0,191,255,0.1)',
-                    border: '1px solid rgba(0,191,255,0.35)',
-                    clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,191,255,0.2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,191,255,0.1)'}
-                >
-                  Get the Pass →
-                </Link>
-              </div>
-            )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
               {filtered.slice(0, visibleCount).map((product, i) => (
                 <div
@@ -238,7 +180,7 @@ export default function Shop() {
                     transition: `all 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i * 80, 600)}ms`,
                   }}
                 >
-                  <ProductCard product={product} isSubscribed={isSubscribed} />
+                  <ProductCard product={product} />
                 </div>
               ))}
             </div>

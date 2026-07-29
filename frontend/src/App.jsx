@@ -12,7 +12,6 @@ import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Media from './pages/Media';
 import Contact from './pages/Contact';
-import Membership from './pages/Membership';
 import Admin from './pages/Admin';
 import Orders from './pages/Orders';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -212,7 +211,6 @@ function AppContent() {
               <Route path="/shop/:productId" element={<ProductDetail />} />
               <Route path="/media" element={<Media />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/membership" element={<Membership />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />

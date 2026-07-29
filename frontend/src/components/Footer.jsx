@@ -190,7 +190,7 @@ export default function Footer() {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              {/* Stripe badge */}
+              {/* Security badge */}
               <div className="flex items-center gap-1.5 border border-white/8 px-2 py-1">
                 <svg className="w-3 h-3 text-urban/30" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1.086-8.593l-.663-3.276-1.148 1.148L7.5 9.676l1.5-1.5 3.5 3.5-1.086 1.731zm4.172-2.441l-1.5 1.5-3.5-3.5 1.086-1.731.663 3.276 1.148-1.148 1.603 1.603z"/>

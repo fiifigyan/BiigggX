@@ -7,11 +7,9 @@ import useCartStore from '../store/cartStore';
 export default function Cart() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, clearCart } = useCartStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('stripe'); // 'stripe' | 'paystack'
   const [guestEmail, setGuestEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
-  const createCheckoutSession = useAction(api.functions.stripe.createCheckoutSession);
   const createPaystackCheckout = useAction(api.functions.paystack.createPaystackCheckout);
   const placeOrder = useMutation(api.functions.orders.placeOrder);
   const drawerRef = useRef(null);
@@ -61,9 +59,9 @@ export default function Cart() {
     if (items.length === 0 || isCheckingOut) return;
     setCheckoutError('');
 
-    // Validate email for Paystack; also capture for Stripe for order tracking
+    // Validate email (required)
     const emailErr = validateEmail(guestEmail);
-    if (paymentMethod === 'paystack' && emailErr) {
+    if (emailErr) {
       setEmailError(emailErr);
       return;
     }
@@ -72,44 +70,23 @@ export default function Cart() {
     setIsCheckingOut(true);
     const origin = window.location.origin;
     try {
-      if (paymentMethod === 'paystack') {
-        // 1. Initialize Paystack transaction
-        const { reference, url } = await createPaystackCheckout({
-          items: cartItems,
-          successUrl: `${origin}/?success=true`,
-          cancelUrl: `${origin}/shop?canceled=true`,
-          customerEmail: guestEmail,
-        });
-        // 2. Persist pending order — include guestEmail for order linking
-        await placeOrder({
-          items: orderItems,
-          totalAmount: totalPrice,
-          paystackReference: reference,
-          paymentProvider: 'paystack',
-          guestEmail: guestEmail || undefined,
-        });
-        // 3. Redirect to Paystack checkout
-        window.location.href = url;
-      } else {
-        // 1. Create Stripe checkout session
-        const { sessionId, url } = await createCheckoutSession({
-          items: cartItems,
-          successUrl: `${origin}/?success=true`,
-          cancelUrl: `${origin}/shop?canceled=true`,
-          customerEmail: guestEmail || undefined,
-        });
-        // 2. Persist pending order — include guestEmail if provided
-        await placeOrder({
-          items: orderItems,
-          totalAmount: totalPrice,
-          stripeSessionId: sessionId,
-          paymentProvider: 'stripe',
-          guestEmail: guestEmail || undefined,
-        });
-        // 3. Redirect to Stripe
-        if (url) window.location.href = url;
-        else throw new Error('No checkout URL returned.');
-      }
+      // 1. Initialize Paystack transaction
+      const { reference, url } = await createPaystackCheckout({
+        items: cartItems,
+        successUrl: `${origin}/?success=true`,
+        cancelUrl: `${origin}/shop?canceled=true`,
+        customerEmail: guestEmail,
+      });
+      // 2. Persist pending order
+      await placeOrder({
+        items: orderItems,
+        totalAmount: totalPrice,
+        paystackReference: reference,
+        paymentProvider: 'paystack',
+        guestEmail: guestEmail,
+      });
+      // 3. Redirect to Paystack checkout
+      window.location.href = url;
     } catch (err) {
       console.error('Checkout error:', err);
       setCheckoutError(err instanceof Error ? err.message : 'Checkout failed. Please try again.');
@@ -251,42 +228,10 @@ export default function Cart() {
               <span className="font-bebas text-3xl text-white">${totalPrice.toFixed(2)}</span>
             </div>
 
-            {/* Payment method selector */}
-            <div>
-              <p className="font-montserrat text-[10px] text-urban/35 uppercase tracking-widest mb-2">
-                Pay with
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'stripe', label: 'Stripe', sub: 'Card · International' },
-                  { id: 'paystack', label: 'Paystack', sub: 'Card · MoMo · Africa' },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setPaymentMethod(opt.id)}
-                    className="flex flex-col items-center py-2.5 px-2 transition-all duration-200"
-                    style={{
-                      background: paymentMethod === opt.id ? 'rgba(229,57,53,0.08)' : '#111',
-                      border: `1px solid ${paymentMethod === opt.id ? 'rgba(229,57,53,0.5)' : 'rgba(255,255,255,0.07)'}`,
-                      clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
-                    }}
-                  >
-                    <span
-                      className="font-montserrat font-bold text-xs"
-                      style={{ color: paymentMethod === opt.id ? '#E53935' : '#fff' }}
-                    >
-                      {opt.label}
-                    </span>
-                    <span className="font-montserrat text-[9px] text-urban/40 mt-0.5">{opt.sub}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Email field — required for Paystack, optional for Stripe */}
+            {/* Email field — required for payment */}
             <div>
               <p className="font-montserrat text-[10px] text-urban/35 uppercase tracking-widest mb-1.5">
-                {paymentMethod === 'paystack' ? 'Your Email *' : 'Your Email (optional)'}
+                Your Email *
               </p>
               <input
                 type="email"
@@ -325,7 +270,7 @@ export default function Cart() {
                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  {paymentMethod === 'paystack' ? 'Pay via Paystack' : 'Secure Checkout'}
+                  Pay via Paystack
                 </>
               )}
             </button>
@@ -355,7 +300,7 @@ export default function Cart() {
             <div className="flex items-center justify-center gap-3 pt-2">
               <span className="font-montserrat text-[10px] text-urban/30 uppercase tracking-widest">Accepted</span>
               <div className="flex gap-2">
-                {['Stripe', 'Paystack', 'MoMo', 'Visa'].map((p) => (
+                {['Paystack', 'Card', 'MoMo'].map((p) => (
                   <span key={p} className="font-montserrat text-[10px] text-urban/40 border border-white/10 px-1.5 py-0.5">
                     {p}
                   </span>
